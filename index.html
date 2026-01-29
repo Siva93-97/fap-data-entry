@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Adoption Programme Survey</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>Family Adoption Programme (FAP) Survey</h1>
+            <p class="subtitle">Community Health Assessment Form</p>
+        </header>
+
+        <!-- Main Content -->
+        <main id="app">
+            <!-- Screen 1: Student Information -->
+            <section id="studentScreen" class="screen active">
+                <div class="form-container">
+                    <h2>Student Information</h2>
+                    <form id="studentForm">
+                        <div class="form-group">
+                            <label for="studentName">Student Name *</label>
+                            <input type="text" id="studentName" required placeholder="Enter your full name">
+                        </div>
+                        <div class="form-group">
+                            <label for="rollNumber">Roll Number (1-150) *</label>
+                            <input type="number" id="rollNumber" min="1" max="150" required placeholder="Enter your roll number">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Save & Continue</button>
+                            <button type="button" id="loadExistingBtn" class="btn btn-secondary">Load Existing Data</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Screen 2: Family Selection & Management -->
+            <section id="familyScreen" class="screen">
+                <div class="family-screen-header">
+                    <div>
+                        <h2>Family Data Collection</h2>
+                        <p id="studentInfo" class="student-info"></p>
+                    </div>
+                    <button id="logoutBtn" class="btn btn-secondary-small">Change Student</button>
+                </div>
+
+                <!-- Family Cards -->
+                <div class="families-grid" id="familiesGrid"></div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button id="exportFamilyBtn" class="btn btn-success">Export Family Data</button>
+                    <button id="exportIndividualBtn" class="btn btn-success">Export Individual Data</button>
+                    <button id="importFamilyBtn" class="btn btn-info">Import Family Data</button>
+                    <button id="importIndividualBtn" class="btn btn-info">Import Individual Data</button>
+                    <button id="viewCompileBtn" class="btn btn-info">View & Compile Data</button>
+                    <button id="clearAllBtn" class="btn btn-danger">Clear All Data</button>
+                </div>
+            </section>
+
+            <!-- Screen 3: Family Form -->
+            <section id="familyFormScreen" class="screen">
+                <div class="form-container">
+                    <div class="form-header">
+                        <button id="backBtn" class="btn btn-secondary-small">← Back</button>
+                        <h2 id="familyTitle">Family Data</h2>
+                        <span id="familyProgress" class="progress-info"></span>
+                    </div>
+
+                    <form id="familyForm">
+                        <!-- Section A: Student & Family Identification -->
+                        <fieldset class="form-section">
+                            <legend>A. Student & Family Identification</legend>
+                            <div class="form-group">
+                                <label for="headName">Head of Family Name *</label>
+                                <input type="text" id="headName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="contactNumber">Contact Number (10 digits) *</label>
+                                <input type="tel" id="contactNumber" pattern="[0-9]{10}" required placeholder="1234567890">
+                            </div>
+                        </fieldset>
+
+                        <!-- Section B: Household Composition -->
+                        <fieldset class="form-section">
+                            <legend>B. Household Composition</legend>
+                            <div class="form-group">
+                                <label for="totalMembers">Total number of family members *</label>
+                                <input type="number" id="totalMembers" min="1" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Type of family *</label>
+                                <select id="familyType" required>
+                                    <option value="">Select...</option>
+                                    <option value="Nuclear">Nuclear</option>
+                                    <option value="Joint">Joint</option>
+                                    <option value="Extended">Extended</option>
+                                    <option value="Single parent">Single parent</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Special groups present (select all that apply)</label>
+                                <div class="checkbox-group">
+                                    <label><input type="checkbox" name="specialGroups" value="Pregnant"> Pregnant</label>
+                                    <label><input type="checkbox" name="specialGroups" value="Lactating"> Lactating</label>
+                                    <label><input type="checkbox" name="specialGroups" value="Under 5"> Under 5</label>
+                                    <label><input type="checkbox" name="specialGroups" value="Elderly"> Elderly</label>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <!-- Section C: Socioeconomic Status -->
+                        <fieldset class="form-section">
+                            <legend>C. Socioeconomic Status</legend>
+                            <div class="form-group">
+                                <label for="sesStatus">SES (BG Prasad)</label>
+                                <select id="sesStatus">
+                                    <option value="">Select...</option>
+                                    <option value="I">I (Highest)</option>
+                                    <option value="II">II</option>
+                                    <option value="III">III</option>
+                                    <option value="IV">IV</option>
+                                    <option value="V">V (Lowest)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="employmentStatus">Employment status (head)</label>
+                                <select id="employmentStatus">
+                                    <option value="">Select...</option>
+                                    <option value="Regular">Regular</option>
+                                    <option value="Irregular">Irregular</option>
+                                    <option value="Unemployed">Unemployed</option>
+                                    <option value="Retired">Retired</option>
+                                </select>
+                            </div>
+                        </fieldset>
+
+                        <!-- Section D: Housing Conditions -->
+                        <fieldset class="form-section">
+                            <legend>D. Housing Conditions</legend>
+                            <div class="form-group">
+                                <label for="houseType">Type of house</label>
+                                <select id="houseType">
+                                    <option value="">Select...</option>
+                                    <option value="Pucca">Pucca</option>
+                                    <option value="Semi-pucca">Semi-pucca</option>
+                                    <option value="Kaccha">Kaccha</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="ownership">Ownership</label>
+                                <select id="ownership">
+                                    <option value="">Select...</option>
+                                    <option value="Owned">Owned</option>
+                                    <option value="Rented">Rented</option>
+                                    <option value="Leased">Leased</option>
+                                    <option value="Unauthorized">Unauthorized</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="numRooms">Number of rooms</label>
+                                <input type="number" id="numRooms" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="separateKitchen">Separate kitchen</label>
+                                <select id="separateKitchen">
+                                    <option value="">Select...</option>
+                                    <option value="Yes">Yes</option>
+                                    <option value="No">No</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="fuelType">Type of fuel used</label>
+                                <select id="fuelType">
+                                    <option value="">Select...</option>
+                                    <option value="LPG">LPG</option>
+                                    <option value="Electricity">Electricity</option>
+                                    <option value="Kerosene">Kerosene</option>
+                                    <option value="Firewood">Firewood</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="ventilation">Ventilation</label>
+                                <select id="ventilation">
+                                    <option value="">Select...</option>
+                                    <option value="Adequate">Adequate</option>
+                                    <option value="Inadequate">Inadequate</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="naturalLighting">Natural lighting</label>
+                                <select id="naturalLighting">
+                                    <option value="">Select...</option>
+                                    <option value="Adequate">Adequate</option>
+                                    <option value="Inadequate">Inadequate</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="overcrowding">Overcrowding</label>
+                                <select id="overcrowding">
+                                    <option value="">Select...</option>
+                                    <option value="Yes">Yes</option>
+                                    <option value="No">No</option>
+                                </select>
+                            </div>
+                        </fieldset>
+
+                        <!-- Section E: Water Supply -->
+                        <fieldset class="form-section">
+                            <legend>E. Water Supply</legend>
+                            <div class="form-group">
+                                <label for="waterSource">Source of drinking water</label>
+                                <select id="waterSource">
+                                    <option value="">Select...</option>
+                                    <option value="Piped">Piped</option>
+                                    <option value="Hand pump">Hand pump</option>
+                                    <option value="Well">Well</option>
+                                    <option value="Tanker">Tanker</option>
+                                    <option value="Bottled">Bottled</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Water treatment at home (select all that apply)</label>
+                                <div class="checkbox-group">
+                                    <label><input type="checkbox" name="waterTreatment" value="Boiling"> Boiling</label>
+                                    <label><input type="checkbox" name="waterTreatment" value="Filtration"> Filtration</label>
+                                    <label><input type="checkbox" name="waterTreatment" value="Chlorination"> Chlorination</label>
+                                    <label><input type="checkbox" name="waterTreatment" value="RO"> RO</label>
+                                    <label><input type="checkbox" name="waterTreatment" value="None"> None</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="waterStorage">Water storage</label>
+                                <select id="waterStorage">
+                                    <option value="">Select...</option>
+                                    <option value="Covered">Covered</option>
+                                    <option value="Uncovered">Uncovered</option>
+                                </select>
+                            </div>
+                        </fieldset>
+
+                        <!-- Section F: Sanitation & Waste Disposal -->
+                        <fieldset class="form-section">
+                            <legend>F. Sanitation & Waste Disposal</legend>
+                            <div class="form-group">
+                                <label for="toiletFacility">Toilet facility</label>
+                                <select id="toiletFacility">
+                                    <option value="">Select...</option>
+                                    <option value="Individual sanitary">Individual sanitary</option>
+                                    <option value="Shared sanitary">Shared sanitary</option>
+                                    <option value="Community toilet">Community toilet</option>
+                                    <option value="Open defecation">Open defecation</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="wasteDisposal">Waste disposal</label>
+                                <select id="wasteDisposal">
+                                    <option value="">Select...</option>
+                                    <option value="Municipal collection">Municipal collection</option>
+                                    <option value="Community bin">Community bin</option>
+                                    <option value="Burning">Burning</option>
+                                    <option value="Open dumping">Open dumping</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="drainageSystem">Drainage system</label>
+                                <select id="drainageSystem">
+                                    <option value="">Select...</option>
+                                    <option value="Closed">Closed</option>
+                                    <option value="Open">Open</option>
+                                    <option value="Absent">Absent</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="vectorBreeding">Vector breeding sites</label>
+                                <select id="vectorBreeding">
+                                    <option value="">Select...</option>
+                                    <option value="Present">Present</option>
+                                    <option value="Absent">Absent</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="domesticAnimals">Presence of domestic animals</label>
+                                <select id="domesticAnimals">
+                                    <option value="">Select...</option>
+                                    <option value="Yes">Yes</option>
+                                    <option value="No">No</option>
+                                </select>
+                            </div>
+                        </fieldset>
+
+                        <!-- Section G: Health Seeking Behaviour -->
+                        <fieldset class="form-section">
+                            <legend>G. Health Seeking Behaviour</legend>
+                            <div class="form-group">
+                                <label for="firstContact">First point of contact for illness</label>
+                                <select id="firstContact">
+                                    <option value="">Select...</option>
+                                    <option value="PHC">PHC</option>
+                                    <option value="Private doctor">Private doctor</option>
+                                    <option value="Hospital">Hospital</option>
+                                    <option value="Pharmacy">Pharmacy</option>
+                                    <option value="Traditional healer">Traditional healer</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="distanceToHealth">Distance to nearest health facility (text)</label>
+                                <input type="text" id="distanceToHealth" placeholder="e.g., 2 km">
+                            </div>
+                            <div class="form-group">
+                                <label for="healthInsurance">Health insurance</label>
+                                <select id="healthInsurance">
+                                    <option value="">Select...</option>
+                                    <option value="Yes">Yes</option>
+                                    <option value="No">No</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="healthExpenditure">Out-of-pocket health expenditure/month (Rs)</label>
+                                <input type="number" id="healthExpenditure" min="0">
+                            </div>
+                        </fieldset>
+
+                        <!-- Section H: Dietary Habits -->
+                        <fieldset class="form-section">
+                            <legend>H. Dietary Habits</legend>
+                            <div class="form-group">
+                                <label for="dietaryPattern">Dietary pattern</label>
+                                <select id="dietaryPattern">
+                                    <option value="">Select...</option>
+                                    <option value="Vegetarian">Vegetarian</option>
+                                    <option value="Non-vegetarian">Non-vegetarian</option>
+                                    <option value="Eggetarian">Eggetarian</option>
+                                    <option value="Vegan">Vegan</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="mealsPerDay">Number of meals per day</label>
+                                <input type="number" id="mealsPerDay" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="fruitVegetable">Consumption of fruits/vegetables</label>
+                                <select id="fruitVegetable">
+                                    <option value="">Select...</option>
+                                    <option value="Daily">Daily</option>
+                                    <option value="Weekly">Weekly</option>
+                                    <option value="Rarely">Rarely</option>
+                                    <option value="Never">Never</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="junkFood">Junk food consumption</label>
+                                <select id="junkFood">
+                                    <option value="">Select...</option>
+                                    <option value="Daily">Daily</option>
+                                    <option value="Weekly">Weekly</option>
+                                    <option value="Occasionally">Occasionally</option>
+                                    <option value="Never">Never</option>
+                                </select>
+                            </div>
+                        </fieldset>
+
+                        <!-- Section I: Substance Use -->
+                        <fieldset class="form-section">
+                            <legend>I. Substance Use</legend>
+                            <div class="form-group">
+                                <label for="tobaccoUse">Tobacco use (family-level aggregate)</label>
+                                <select id="tobaccoUse">
+                                    <option value="">Select...</option>
+                                    <option value="None">None</option>
+                                    <option value="Smoking">Smoking</option>
+                                    <option value="Chewing">Chewing</option>
+                                    <option value="Both">Both</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="alcoholConsumption">Alcohol consumption (any)</label>
+                                <select id="alcoholConsumption">
+                                    <option value="">Select...</option>
+                                    <option value="Yes">Yes</option>
+                                    <option value="No">No</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="otherSubstance">Other substance abuse in family (text)</label>
+                                <input type="text" id="otherSubstance" placeholder="Specify or None">
+                            </div>
+                        </fieldset>
+
+                        <!-- Section J: Physical Activity -->
+                        <fieldset class="form-section">
+                            <legend>J. Physical Activity</legend>
+                            <div class="form-group">
+                                <label for="physicalActivity">Regular physical activity/exercise</label>
+                                <select id="physicalActivity">
+                                    <option value="">Select...</option>
+                                    <option value="Yes">Yes</option>
+                                    <option value="No">No</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="durationGroup" style="display:none;">
+                                <label for="activityDuration">Duration/day (minutes)</label>
+                                <input type="number" id="activityDuration" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="sedentaryLifestyle">Sedentary lifestyle</label>
+                                <select id="sedentaryLifestyle">
+                                    <option value="">Select...</option>
+                                    <option value="Yes">Yes</option>
+                                    <option value="No">No</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="screenTime">Screen time per day</label>
+                                <select id="screenTime">
+                                    <option value="">Select...</option>
+                                    <option value="<2 hours"><2 hours</option>
+                                    <option value="2-4 hours">2-4 hours</option>
+                                    <option value="4-6 hours">4-6 hours</option>
+                                    <option value=">6 hours">>6 hours</option>
+                                </select>
+                            </div>
+                        </fieldset>
+
+                        <!-- Section K: Outcome Assessment -->
+                        <fieldset class="form-section">
+                            <legend>K. Outcome Assessment</legend>
+                            <div class="form-group">
+                                <label for="healthImprovement">Health status improvement</label>
+                                <select id="healthImprovement">
+                                    <option value="">Select...</option>
+                                    <option value="Significant">Significant</option>
+                                    <option value="Moderate">Moderate</option>
+                                    <option value="Minimal">Minimal</option>
+                                    <option value="No change">No change</option>
+                                    <option value="Deteriorated">Deteriorated</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="compliance">Compliance with recommendations</label>
+                                <select id="compliance">
+                                    <option value="">Select...</option>
+                                    <option value="Excellent">Excellent</option>
+                                    <option value="Good">Good</option>
+                                    <option value="Fair">Fair</option>
+                                    <option value="Poor">Poor</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="knowledgeImprovement">Knowledge improvement</label>
+                                <select id="knowledgeImprovement">
+                                    <option value="">Select...</option>
+                                    <option value="Significant">Significant</option>
+                                    <option value="Moderate">Moderate</option>
+                                    <option value="Minimal">Minimal</option>
+                                    <option value="None">None</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="behavioralChanges">Behavioral changes observed</label>
+                                <textarea id="behavioralChanges" rows="3" placeholder="Describe observed changes..."></textarea>
+                            </div>
+                        </fieldset>
+
+                        <!-- Section L: Barriers to Health -->
+                        <fieldset class="form-section">
+                            <legend>L. Barriers to Health</legend>
+                            <div class="form-group">
+                                <label for="financialBarrier">Financial constraints</label>
+                                <select id="financialBarrier">
+                                    <option value="">Select...</option>
+                                    <option value="Major">Major</option>
+                                    <option value="Moderate">Moderate</option>
+                                    <option value="Minor">Minor</option>
+                                    <option value="None">None</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="transportationBarrier">Transportation difficulties</label>
+                                <select id="transportationBarrier">
+                                    <option value="">Select...</option>
+                                    <option value="Major">Major</option>
+                                    <option value="Moderate">Moderate</option>
+                                    <option value="Minor">Minor</option>
+                                    <option value="None">None</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="culturalBarrier">Cultural/religious barriers</label>
+                                <select id="culturalBarrier">
+                                    <option value="">Select...</option>
+                                    <option value="Present">Present</option>
+                                    <option value="Absent">Absent</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="culturalSpecifyGroup" style="display:none;">
+                                <label for="culturalSpecify">If present, specify</label>
+                                <input type="text" id="culturalSpecify">
+                            </div>
+                            <div class="form-group">
+                                <label for="languageBarrier">Language barriers</label>
+                                <select id="languageBarrier">
+                                    <option value="">Select...</option>
+                                    <option value="Present">Present</option>
+                                    <option value="Absent">Absent</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="awarenessLack">Lack of awareness</label>
+                                <select id="awarenessLack">
+                                    <option value="">Select...</option>
+                                    <option value="Major">Major</option>
+                                    <option value="Moderate">Moderate</option>
+                                    <option value="Minor">Minor</option>
+                                    <option value="None">None</option>
+                                </select>
+                            </div>
+                        </fieldset>
+
+                        <!-- Section M: Student Observations -->
+                        <fieldset class="form-section">
+                            <legend>M. Student Observations</legend>
+                            <div class="form-group">
+                                <label for="healthPriorities">Major health priorities identified</label>
+                                <textarea id="healthPriorities" rows="3" placeholder="Describe major health priorities..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="familyStrengths">Strengths of the family</label>
+                                <textarea id="familyStrengths" rows="3" placeholder="Describe family strengths..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="areasAttention">Areas requiring immediate attention</label>
+                                <textarea id="areasAttention" rows="3" placeholder="Describe areas needing attention..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="additionalComments">Additional comments</label>
+                                <textarea id="additionalComments" rows="3" placeholder="Any additional observations..."></textarea>
+                            </div>
+                        </fieldset>
+
+                        <!-- Family Members Section -->
+                        <fieldset class="form-section">
+                            <legend>N. Family Members</legend>
+                            <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">Enter the total number of family members above. Member entry fields will appear automatically.</p>
+                            <div id="membersList" class="members-list"></div>
+                        </fieldset>
+
+                        <!-- Save Button -->
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Save Family Data</button>
+                            <button type="button" id="viewDataBtn" class="btn btn-secondary">View Data</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Screen 4: View Data (Read-only) -->
+            <section id="viewScreen" class="screen">
+                <div class="form-container">
+                    <div class="form-header">
+                        <button id="backFromViewBtn" class="btn btn-secondary-small">← Back</button>
+                        <h2 id="viewTitle">Family Data View</h2>
+                    </div>
+                    <div id="viewContent" class="view-content"></div>
+                </div>
+            </section>
+
+            <!-- Screen 5: Compile Data -->
+            <section id="compileScreen" class="screen">
+                <div class="form-container">
+                    <div class="form-header">
+                        <button id="backFromCompileBtn" class="btn btn-secondary-small">← Back</button>
+                        <h2>View & Compile Data</h2>
+                    </div>
+                    <div id="compileContent" class="compile-content">
+                        <div class="compile-tabs">
+                            <button class="tab-button active" data-tab="familyTab">Family Data</button>
+                            <button class="tab-button" data-tab="individualTab">Individual Data</button>
+                        </div>
+                        <div id="familyTab" class="tab-content active">
+                            <div id="familyDataTable"></div>
+                        </div>
+                        <div id="individualTab" class="tab-content">
+                            <div id="individualDataTable"></div>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <button id="downloadCompiledFamilyBtn" class="btn btn-success">Download Family Data</button>
+                            <button id="downloadCompiledIndividualBtn" class="btn btn-success">Download Individual Data</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- File Input (Hidden) -->
+        <input type="file" id="fileImportFamily" accept=".xlsx,.xls" style="display:none;">
+        <input type="file" id="fileImportIndividual" accept=".xlsx,.xls" style="display:none;">
+    </div>
+
+    <!-- Messages -->
+    <div id="messageBox" class="message-box"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="storage.js"></script>
+    <script src="export.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Initialize the app
+        let app;
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                const storageInstance = new DataStorage();
+                app = new FAPSurveyApp(storageInstance);
+                window.app = app;
+                console.log('App initialized successfully');
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                alert('Error loading application: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
