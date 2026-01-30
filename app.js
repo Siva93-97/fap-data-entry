@@ -3,6 +3,8 @@ class FAPSurveyApp {
         this.storage = storage;
         this.currentFamily = null;
         this.currentMemberCount = 0;
+        this.masterFamilies = [];
+        this.teacherAuthenticated = false;
         this.init();
     }
 
@@ -44,6 +46,14 @@ class FAPSurveyApp {
         document.getElementById('downloadCompiledFamilyBtn').addEventListener('click', () => this.downloadCompiledFamilyData());
         document.getElementById('downloadCompiledIndividualBtn').addEventListener('click', () => this.downloadCompiledIndividualData());
 
+        // Teacher controls
+        document.getElementById('teachersBtn').addEventListener('click', () => this.authenticateTeacher());
+        document.getElementById('viewMasterBtn').addEventListener('click', () => this.viewMasterData());
+        document.getElementById('downloadMasterBtn').addEventListener('click', () => this.downloadMasterData());
+
+        // Autosave drafts on any change in family form
+        document.getElementById('familyForm').addEventListener('input', () => this.saveDraftFamily());
+
         // Tab switching
         document.querySelectorAll('.tab-button').forEach(button => {
             button.addEventListener('click', (e) => this.switchTab(e));
@@ -67,14 +77,31 @@ class FAPSurveyApp {
     handleStudentSubmit(e) {
         e.preventDefault();
         const name = document.getElementById('studentName').value.trim();
-        const roll = document.getElementById('rollNumber').value.trim();
+        const rollInput = document.getElementById('rollNumber').value.trim();
+        const batch = document.getElementById('batchSelect').value;
 
-        if (!name || !roll) {
+        if (!name || !rollInput || !batch) {
             this.showMessage('Please fill in all fields', 'error');
             return;
         }
 
-        const studentData = { name, roll };
+        const rollStr = rollInput.toUpperCase();
+        const validA = /^A([1-9]|[12][0-9]|30)$/i;
+        const validNum = /^\d+$/;
+        if (rollStr.startsWith('A')) {
+            if (!validA.test(rollStr)) {
+                this.showMessage('Invalid roll. Use A1-A30 or 1-150', 'error');
+                return;
+            }
+        } else {
+            const num = parseInt(rollStr, 10);
+            if (!validNum.test(rollStr) || num < 1 || num > 150) {
+                this.showMessage('Invalid roll. Use A1-A30 or 1-150', 'error');
+                return;
+            }
+        }
+
+        const studentData = { name, roll: rollStr, batch };
         this.storage.saveStudentData(studentData);
         this.loadFamilyScreen();
     }
@@ -84,6 +111,7 @@ class FAPSurveyApp {
         if (existingData.name) {
             document.getElementById('studentName').value = existingData.name;
             document.getElementById('rollNumber').value = existingData.roll;
+            document.getElementById('batchSelect').value = existingData.batch || '';
             this.showMessage('Existing data loaded', 'success');
         } else {
             this.showMessage('No existing data found', 'info');
@@ -92,7 +120,7 @@ class FAPSurveyApp {
 
     loadFamilyScreen() {
         const student = this.storage.getStudentData();
-        document.getElementById('studentInfo').textContent = `${student.name} - Roll: ${student.roll}`;
+        document.getElementById('studentInfo').textContent = `${student.name} - Roll: ${student.roll} - Batch: ${student.batch || ''}`;
         this.renderFamilyCards();
         this.showScreen('familyScreen');
     }
@@ -341,6 +369,13 @@ class FAPSurveyApp {
             });
         }
 
+        // Autosave when any input/select changes inside a member entry
+        div.querySelectorAll('input, select').forEach(el => {
+            el.addEventListener('change', () => {
+                if (this.currentFamily !== null) this.saveDraftFamily();
+            });
+        });
+
         return div;
     }
 
@@ -565,6 +600,13 @@ class FAPSurveyApp {
     exportFamilyData() {
         const student = this.storage.getStudentData();
         const families = this.storage.getFamilies();
+        const completed = (families || []).filter(f => f && f.headName).length;
+        const totalNeeded = 5;
+        if (completed < totalNeeded) {
+            const remaining = totalNeeded - completed;
+            alert(`${remaining} family entries remaining`);
+            return;
+        }
         const manager = new ExportManager();
         manager.exportFamilyData(families, student, null);
         this.showMessage('Family data exported successfully', 'success');
@@ -573,6 +615,13 @@ class FAPSurveyApp {
     exportIndividualData() {
         const student = this.storage.getStudentData();
         const families = this.storage.getFamilies();
+        const completed = (families || []).filter(f => f && f.headName).length;
+        const totalNeeded = 5;
+        if (completed < totalNeeded) {
+            const remaining = totalNeeded - completed;
+            alert(`${remaining} family entries remaining`);
+            return;
+        }
         const manager = new ExportManager();
         manager.exportIndividualData(families, student, null);
         this.showMessage('Individual data exported successfully', 'success');
@@ -581,86 +630,63 @@ class FAPSurveyApp {
     handleImportFamily(e) {
         const file = e.target.files[0];
         if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const workbook = XLSX.read(event.target.result, { type: 'binary' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const data = XLSX.utils.sheet_to_json(worksheet);
-                
-                data.forEach((row, index) => {
-                    const familyData = {
-                        familyId: row['Family ID'] || (index + 1),
-                        headName: row['Head of Family'] || '',
-                        contactNumber: row['Contact Number'] || '',
-                        totalMembers: row['Total Members'] || 0,
-                        familyType: row['Family Type'] || '',
-                        members: []
-                    };
+        const manager = new ExportManager();
+        if (this.teacherAuthenticated) {
+            manager.importFamilyFromExcel(file).then(families => {
+                families.forEach(f => {
+                    const fid = f.familyId || (this.masterFamilies.length + 1);
+                    const existingIndex = this.masterFamilies.findIndex(m => String(m.familyId) === String(fid));
+                    if (existingIndex !== -1) {
+                        this.masterFamilies[existingIndex] = { ...this.masterFamilies[existingIndex], ...f };
+                        this.masterFamilies[existingIndex].members = (this.masterFamilies[existingIndex].members || []).concat(f.members || []);
+                    } else {
+                        this.masterFamilies.push(f);
+                    }
+                });
+                this.showMessage('Family file imported to master successfully', 'success');
+            }).catch(err => this.showMessage('Error importing family file: ' + err, 'error'));
+        } else {
+            manager.importFamilyFromExcel(file).then(families => {
+                families.forEach((row, index) => {
+                    const familyData = { ...row };
                     this.storage.saveFamily(index, familyData);
                 });
-                
                 this.showMessage('Family data imported successfully', 'success');
                 this.renderFamilyCards();
-            } catch (error) {
-                this.showMessage('Error importing family data: ' + error.message, 'error');
-            }
-        };
-        reader.readAsBinaryString(file);
+            }).catch(err => this.showMessage('Error importing family data: ' + err, 'error'));
+        }
         e.target.value = '';
     }
 
     handleImportIndividual(e) {
         const file = e.target.files[0];
         if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const workbook = XLSX.read(event.target.result, { type: 'binary' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const data = XLSX.utils.sheet_to_json(worksheet);
-                
-                data.forEach((row) => {
-                    const yes = (v) => String(v || '').toLowerCase().trim() === 'yes';
-                    const familyIndex = (row['Family ID'] || 1) - 1;
-                    const family = this.storage.getFamily(familyIndex) || { members: [] };
-                    if (!family.members) family.members = [];
-
-                    family.members.push({
-                        name: row['Name'] || '',
-                        age: row['Age'] || '',
-                        sex: row['Sex'] || '',
-                        education: row['Education'] || '',
-                        occupation: row['Occupation'] || '',
-                        diseases: {
-                            hypertension: yes(row['Hypertension']),
-                            diabetes: yes(row['Diabetes_Mellitus'] || row['Diabetes']),
-                            heartDisease: yes(row['Heart_Disease'] || row['Heart']),
-                            respiratoryDisease: yes(row['Respiratory_Disease'] || row['Respiratory']),
-                            tuberculosis: yes(row['Tuberculosis'] || row['TB']),
-                            cancer: yes(row['Cancer']),
-                            mentalHealth: yes(row['Mental_Health_Disorder'] || row['Mental_Health']),
-                            disability: yes(row['Disability']),
-                            others: yes(row['Others'])
-                        },
-                        disabilityType: row['Disability_Type'] || '',
-                        othersSpecify: row['Others_Specify'] || ''
-                    });
-
-                    this.storage.saveFamily(familyIndex, family);
+        const manager = new ExportManager();
+        if (this.teacherAuthenticated) {
+            manager.importIndividualFromExcel(file, this.masterFamilies).then(families => {
+                families.forEach(f => {
+                    const fid = f.familyId;
+                    const existingIndex = this.masterFamilies.findIndex(m => String(m.familyId) === String(fid));
+                    if (existingIndex !== -1) {
+                        this.masterFamilies[existingIndex].members = (this.masterFamilies[existingIndex].members || []).concat(f.members || []);
+                    } else {
+                        this.masterFamilies.push(f);
+                    }
                 });
-                
+                this.showMessage('Individual file imported to master successfully', 'success');
+            }).catch(err => this.showMessage('Error importing individual file: ' + err, 'error'));
+        } else {
+            manager.importIndividualFromExcel(file, this.storage.getFamilies()).then(families => {
+                families.forEach(f => {
+                    const idx = (f.familyId || 1) - 1;
+                    const existing = this.storage.getFamily(idx) || {};
+                    existing.members = (existing.members || []).concat(f.members || []);
+                    this.storage.saveFamily(idx, existing);
+                });
                 this.showMessage('Individual data imported successfully', 'success');
                 this.renderFamilyCards();
-            } catch (error) {
-                this.showMessage('Error importing individual data: ' + error.message, 'error');
-            }
-        };
-        reader.readAsBinaryString(file);
+            }).catch(err => this.showMessage('Error importing individual data: ' + err, 'error'));
+        }
         e.target.value = '';
     }
 
@@ -702,8 +728,123 @@ class FAPSurveyApp {
         this.showScreen('compileScreen');
     }
 
+    // Save a draft of the current family form (autosave)
+    saveDraftFamily() {
+        if (this.currentFamily === null) return;
+        try {
+            const headName = document.getElementById('headName').value.trim();
+            const contactNumber = document.getElementById('contactNumber').value.trim();
+            const membersList = Array.from(document.querySelectorAll('.member-entry')).map(entry => ({
+                name: entry.querySelector('.member-name') ? entry.querySelector('.member-name').value : '',
+                age: entry.querySelector('.member-age') ? entry.querySelector('.member-age').value : '',
+                sex: entry.querySelector('.member-sex') ? entry.querySelector('.member-sex').value : '',
+                education: entry.querySelector('.member-education') ? entry.querySelector('.member-education').value : '',
+                occupation: entry.querySelector('.member-occupation') ? entry.querySelector('.member-occupation').value : '',
+                diseases: {
+                    hypertension: !!entry.querySelector('.disease-hypertension') && entry.querySelector('.disease-hypertension').checked,
+                    diabetes: !!entry.querySelector('.disease-diabetes') && entry.querySelector('.disease-diabetes').checked,
+                    heartDisease: !!entry.querySelector('.disease-heart') && entry.querySelector('.disease-heart').checked,
+                    respiratoryDisease: !!entry.querySelector('.disease-resp') && entry.querySelector('.disease-resp').checked,
+                    tuberculosis: !!entry.querySelector('.disease-tb') && entry.querySelector('.disease-tb').checked,
+                    cancer: !!entry.querySelector('.disease-cancer') && entry.querySelector('.disease-cancer').checked,
+                    mentalHealth: !!entry.querySelector('.disease-mental') && entry.querySelector('.disease-mental').checked,
+                    disability: !!entry.querySelector('.disease-disability') && entry.querySelector('.disease-disability').checked,
+                    others: !!entry.querySelector('.disease-others') && entry.querySelector('.disease-others').checked
+                },
+                disabilityType: entry.querySelector('.member-disabilityType') ? entry.querySelector('.member-disabilityType').value : '',
+                othersSpecify: entry.querySelector('.member-othersSpecify') ? entry.querySelector('.member-othersSpecify').value : ''
+            }));
+            const familyData = {
+                familyId: this.currentFamily + 1,
+                headName,
+                contactNumber,
+                totalMembers: parseInt(document.getElementById('totalMembers').value) || membersList.length,
+                familyType: document.getElementById('familyType').value,
+                members: membersList
+            };
+            this.storage.saveFamily(this.currentFamily, familyData);
+        } catch (err) {
+            console.warn('Autosave failed:', err);
+        }
+    }
+
+    // Teacher authentication and toggling controls
+    authenticateTeacher() {
+        const code = prompt('Enter teacher code:');
+        if (code === '0000') {
+            this.teacherAuthenticated = true;
+            this.toggleTeacherControls(true);
+            this.showMessage('Teacher mode enabled', 'success');
+        } else {
+            this.showMessage('Incorrect code', 'error');
+        }
+    }
+
+    toggleTeacherControls(show) {
+        document.querySelectorAll('.teacher-only').forEach(el => {
+            el.style.display = show ? '' : 'none';
+        });
+        document.getElementById('teachersPanel').style.display = show ? 'block' : 'none';
+    }
+
+    viewMasterData() {
+        if (!this.masterFamilies || this.masterFamilies.length === 0) {
+            this.showMessage('No master data imported yet', 'info');
+            return;
+        }
+        let familyTable = `<table class="data-table"><thead><tr><th>Family ID</th><th>Head Name</th><th>Contact</th><th>Total Members</th><th>Type</th></tr></thead><tbody>`;
+        this.masterFamilies.forEach((family, index) => {
+            if (family && family.headName) {
+                familyTable += `<tr><td>${family.familyId || (index + 1)}</td><td>${family.headName}</td><td>${family.contactNumber}</td><td>${family.totalMembers || (family.members ? family.members.length : '')}</td><td>${family.familyType}</td></tr>`;
+            }
+        });
+        familyTable += `</tbody></table>`;
+        document.getElementById('familyDataTable').innerHTML = familyTable;
+        let individualTable = `<table class="data-table"><thead><tr><th>Family ID</th><th>Member Name</th><th>Age</th><th>Sex</th><th>Education</th><th>Occupation</th><th>Health</th></tr></thead><tbody>`;
+        this.masterFamilies.forEach((family, index) => {
+            if (family && family.members) {
+                family.members.forEach(member => {
+                    const healthList = [];
+                    if (member.diseases) {
+                        if (member.diseases.hypertension) healthList.push('Hypertension');
+                        if (member.diseases.diabetes) healthList.push('Diabetes');
+                        if (member.diseases.heartDisease) healthList.push('Heart');
+                        if (member.diseases.respiratoryDisease) healthList.push('Respiratory');
+                        if (member.diseases.tuberculosis) healthList.push('TB');
+                        if (member.diseases.cancer) healthList.push('Cancer');
+                        if (member.diseases.mentalHealth) healthList.push('Mental');
+                        if (member.diseases.disability) healthList.push('Disability');
+                        if (member.diseases.others) healthList.push(member.othersSpecify || 'Others');
+                    }
+                    individualTable += `<tr><td>${family.familyId || (index + 1)}</td><td>${member.name}</td><td>${member.age}</td><td>${member.sex}</td><td>${member.education || ''}</td><td>${member.occupation || ''}</td><td>${healthList.join(', ')}</td></tr>`;
+                });
+            }
+        });
+        individualTable += `</tbody></table>`;
+        document.getElementById('individualDataTable').innerHTML = individualTable;
+        this.showScreen('compileScreen');
+    }
+
+    downloadMasterData() {
+        if (!this.masterFamilies || this.masterFamilies.length === 0) {
+            this.showMessage('No master data to download', 'info');
+            return;
+        }
+        const manager = new ExportManager();
+        manager.exportFamilyData(this.masterFamilies, { name: 'Master', roll: '0000' });
+        manager.exportIndividualData(this.masterFamilies, { name: 'Master', roll: '0000' });
+        this.showMessage('Master data downloaded', 'success');
+    }
+
     downloadCompiledFamilyData() {
         const families = this.storage.getFamilies();
+        const completed = (families || []).filter(f => f && f.headName).length;
+        const totalNeeded = 5;
+        if (completed < totalNeeded) {
+            const remaining = totalNeeded - completed;
+            alert(`${remaining} family entries remaining`);
+            return;
+        }
         const manager = new ExportManager();
         manager.exportFamilyData(families, 'Compiled');
         this.showMessage('Family data downloaded successfully', 'success');
@@ -711,6 +852,13 @@ class FAPSurveyApp {
 
     downloadCompiledIndividualData() {
         const families = this.storage.getFamilies();
+        const completed = (families || []).filter(f => f && f.headName).length;
+        const totalNeeded = 5;
+        if (completed < totalNeeded) {
+            const remaining = totalNeeded - completed;
+            alert(`${remaining} family entries remaining`);
+            return;
+        }
         const manager = new ExportManager();
         manager.exportIndividualData(families, 'Compiled');
         this.showMessage('Individual data downloaded successfully', 'success');
@@ -750,3 +898,4 @@ class FAPSurveyApp {
         }, 4000);
     }
 }
+
