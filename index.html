@@ -26,8 +26,24 @@
                             <input type="text" id="studentName" required placeholder="Enter your full name">
                         </div>
                         <div class="form-group">
-                            <label for="rollNumber">Roll Number (1-150) *</label>
-                            <input type="number" id="rollNumber" min="1" max="150" required placeholder="Enter your roll number">
+                            <label for="rollNumber">Roll Number (1-150 or A1-A30) *</label>
+                            <input type="text" id="rollNumber" required placeholder="Enter your roll number (e.g., 25 or A5)">
+                        </div>
+                        <div class="form-group">
+                            <label for="batchSelect">Batch *</label>
+                            <select id="batchSelect" required>
+                                <option value="">Select Batch</option>
+                                <option value="2021">2021</option>
+                                <option value="2022">2022</option>
+                                <option value="2023">2023</option>
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                                <option value="2027">2027</option>
+                                <option value="2028">2028</option>
+                                <option value="2029">2029</option>
+                                <option value="2030">2030</option>
+                            </select>
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">Save & Continue</button>
@@ -54,11 +70,17 @@
                 <div class="action-buttons">
                     <button id="exportFamilyBtn" class="btn btn-success">Export Family Data</button>
                     <button id="exportIndividualBtn" class="btn btn-success">Export Individual Data</button>
-                    <button id="importFamilyBtn" class="btn btn-info">Import Family Data</button>
-                    <button id="importIndividualBtn" class="btn btn-info">Import Individual Data</button>
-                    <button id="viewCompileBtn" class="btn btn-info">View & Compile Data</button>
+                    <button id="importFamilyBtn" class="btn btn-info teacher-only" style="display:none;">Import Family Data</button>
+                    <button id="importIndividualBtn" class="btn btn-info teacher-only" style="display:none;">Import Individual Data</button>
+                    <button id="viewCompileBtn" class="btn btn-info teacher-only" style="display:none;">View & Compile Data</button>
                     <button id="clearAllBtn" class="btn btn-danger">Clear All Data</button>
+                    <button id="teachersBtn" class="btn btn-warning">For Teachers</button>
                 </div>
+
+                <div id="teachersPanel" style="display:none;margin-top:10px;">
+                    <button id="viewMasterBtn" class="btn btn-info">View Master Chart</button>
+                    <button id="downloadMasterBtn" class="btn btn-success">Download Master Chart</button>
+                </div> 
             </section>
 
             <!-- Screen 3: Family Form -->
